@@ -1,0 +1,26 @@
+& d:/repos/NewManga/venv/Scripts/Activate.ps1
+cd Manga
+python manage.py runserver
+
+& d:/repos/NewManga/venv/Scripts/Activate.ps1
+cd Manga
+celery -A Manga worker -l info -P gevent
+
+& d:/repos/NewManga/venv/Scripts/Activate.ps1
+cd Manga
+celery -A Manga flower -l info -P gevent
+
+Сильнейший Бог
+
+docker-compose down -v
+docker-compose up -d --build 
+
+celery worker --app=Manga --loglevel=info
+
+docker-compose -f docker-compose.prod.yml down -v
+docker-compose -f docker-compose.prod.yml up -d --build 
+docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput
+docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input --clear
+
+docker exec manga_nginx_1 ls /home/app/web/static
+docker exec manga_web_1 ls /home/app/web/static

@@ -1,0 +1,284 @@
+import os.path
+import random
+import time
+
+import requests
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.files import File
+from django.http import HttpResponseForbidden, HttpResponse
+from django.shortcuts import redirect
+import uuid
+from django.utils import timezone
+from django.views.generic import ListView, DetailView, FormView, CreateView
+from django.views.generic.detail import SingleObjectMixin
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .forms import AddMangaTitleForm, AddMangaChapterForm
+from .models import MangaTitle, MangaChapter, MangaChapterStatus, Category, Image
+from .serializers import MangaTitleSerializers
+from .parse import Parse
+from django.core.files.uploadedfile import UploadedFile
+from django.core.files import File  # you need this somewhere
+import urllib
+from django.conf import settings
+import shutil
+from tqdm import tqdm
+
+
+class MainApiView(APIView):
+    def get(self, request):
+        manga = MangaTitle.objects.all()
+        serializer = MangaTitleSerializers(manga, many=True)
+        return Response({"data": serializer.data}, status=200)
+
+
+class MainPage(ListView):
+    model = MangaTitle
+    paginate_by = 100
+    template_name = 'main.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['now'] = timezone.now()
+        return context
+
+
+class MangaTitleDetailView(DetailView):
+    model = MangaTitle
+    template_name = 'detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['now'] = timezone.now()
+        chapters_read, chapters_nr = {}, {}
+        if self.request.user.is_authenticated:
+            for item in MangaChapter.objects.filter(manga=context['object']):
+                if MangaChapterStatus.objects.filter(user=self.request.user, chapter=item).exists():
+                    chapters_read[item] = MangaChapterStatus.objects.get(user=self.request.user, chapter=item).status
+                else:
+                    chapters_nr[item] = 0
+        else:
+            chapters_nr = MangaChapter.objects.filter(manga=context['object'])
+
+        context['chapters_read'] = chapters_read
+        context['chapters_nr'] = chapters_nr
+        return context
+
+
+def GoToRead(request, pk):
+    chapter = MangaChapter.objects.get(id=pk)
+    if request.user.is_authenticated:
+        user = request.user
+        new_chapter_status = MangaChapterStatus(chapter=chapter, user=user, status=1)
+        new_chapter_status.save()
+    return redirect(chapter.URL)
+
+
+def Update(request):
+    manga_list = [
+        'Став жертвой, я убил Злого Бога!',
+        'На самом деле, я большой человек на пути культивации',
+        '3000 лет практики Ци',
+        'Архимаг, который вернулся спустя 4000 лет',
+        'Бесподобная душа Воина',
+        'Бессмертный городской король',
+        'Библиотека Небесного Пути',
+        'Боевое безумие',
+        'Боевой Мастер',
+        'Божественный Император Лин',
+        'Вечный первый бог',
+        'Владыка Духовного Меча',
+        'Возвращение Культиватора в Университет',
+        'Возрождение Городского Божества',
+        'Восставший против неба',
+        'Выживание с нуля',
+        'Выше Всех Богов',
+        'Городской бог',
+        'Групповая Беседа Культиваторов',
+        'Дракон внутри меня',
+        'Жизнь императора войны после ухода в отставку',
+        'Игрок',
+        'Культиватор из Будущего',
+        'Легендарный лунный скульптор',
+        'Лучший в мире мастер боевых искусств',
+        'Меч против неба',
+        'Меч разящего грома',
+        'Наномашины',
+        'Невероятное обучение',
+        'Она представилась как ученица мудреца',
+        'Перерождение бессмертного горожанина-культиватора',
+        'Перерождение Бессмертного Императора',
+        'Пик Боевых Искусств',
+        'Пойманный в ловушку на миллионы лет: Мои ученики распространились по всему миру',
+        'Последний человек',
+        'Почтенный бессмертный Ло Вуцзи',
+        'Расхититель гробниц',
+        'Регрессия мага 8-го класса',
+        'Сильнейший Отброс',
+        'Сказания о Бессмертных и го',
+        'Сказания о Демонах и Богах',
+        'Становление богом',
+        'Туториал продвинутого игрока в башне',
+        'Эволюция монстров-питомцев',
+        'Элисед',
+        'Я великий Бессмертный',
+        'Я злой бог',
+        'Я обречен на величие!',
+        'Я переживал один и тот же день в течение тысячи лет',
+        'Я, сильнейший король демонов, стал ребенком?!',
+        'Король Апокалипсиса',
+        'Мой папа слишком сильный',
+        'Юань лун',
+        'С сегодняшнего дня я лорд города',
+        'Вечное Почтение',
+        'Прокачка в альтернативном мире',
+        'Мои ученики - супер боги',
+        'Техника Бога звёздных боевых искусств',
+        'Бессмертный культиватор против суперспособностей',
+    ]
+    for manga in manga_list:
+        time.sleep(0.2)
+        print(f'{manga} start...')
+        time.sleep(0.2)
+        parser = Parse(manga)
+        data = parser.get_data()
+        if not data['need_auth']:
+            check_category(data['categories'])
+            check_title(data)
+            time.sleep(0.2)
+            print(f'{manga} stop...')
+            time.sleep(0.2)
+        break
+
+
+
+def check_title(data: dict):
+    #img_url = f'https://api.remanga.org/media/titles/my-three-thousand-years-to-the-sky/2b5f474f165593bda0f20f2ea5e26106.jpg'
+    if not MangaTitle.objects.filter(title_name=data['rus_name']).exists():
+        img_url = f'https://api.remanga.org/{data["img"]}'
+        new_title = MangaTitle()
+        new_title.title_name = data['rus_name']
+        new_title.slug = data['dir']
+        dst_path = f'{new_title.save_override(img_url.split("/")[-1])}'
+        title_dir = ''
+        for x in dst_path.split('\\')[:-1]:
+            title_dir += "".join(f'{str(x)}\\')
+        new_title.dir = title_dir
+        #download_file(img_url, img_url.split("/")[-1], dst_path)
+        new_title.image_url = img_url
+        #download_file(img_url, dst_path)
+        new_title.image = f'media/{img_url.split("/")[-1]}'
+        new_title.save()
+        for tag in data['categories']:
+            name = tag['name']
+            category = Category.objects.get(name=name)
+            new_title.categories.add(category)
+            pass
+        new_title.save()
+    chapter_index = 0
+    for chapter in tqdm(data['chapter_list'][-1:0:-1]):
+        if not chapter[2]:
+            if not MangaChapter.objects.filter(manga=MangaTitle.objects.get(title_name=data['rus_name']),
+                                            chapter_number=chapter[3]).exists():
+                manga_title = MangaTitle.objects.get(title_name=data['rus_name'])
+                new_chapter = MangaChapter(manga=manga_title, chapter_number=chapter_index, chapter_name=chapter[1])
+                chapter_index += 1
+                new_chapter.save()
+                image_index = 0
+                dir_name = str(uuid.uuid1(random.randint(0, 281474976710655)))
+                for image in chapter[-1]:
+                    for image_part in image:
+                        pass
+                        #download_file(image_part[-1], image_part[-1].split('/')[-1], dir_name)
+                        new_image = Image()
+                        new_image.chapter = new_chapter
+                        new_image.image_url = image[-1]
+                        #new_image.image = f'media/{image_part[-1].split("/")[-1]}'
+                        new_image.image_number = image_index
+                        image_index += 1
+                        new_image.save()
+                pass
+            pass
+        pass
+    pass
+
+
+
+def download_file(url, file_path):
+    res = requests.get(url, stream=True)
+    dir_path = ''
+    for x in file_path.split('\\')[:-1]:
+        dir_path += "".join(f'{str(x)}\\')
+    if not os.path.exists(dir_path):
+        os.mkdir(f'{dir_path}')
+    if res.status_code == 200:
+        with open(f'{file_path}', 'wb') as f:
+            shutil.copyfileobj(res.raw, f)
+    else:
+       print('Image Couldn\'t be retrieved')
+
+def tempfunc():
+    img_url = "https://api.remanga.org/media/titles/my-three-thousand-years-to-the-sky/2b5f474f165593bda0f20f2ea5e26106.jpg "
+    file_name = img_url.split('/')[-1]
+    res = requests.get(img_url, stream=True)
+    if res.status_code == 200:
+       with open(f'../media/{file_name}', 'wb') as f:
+           shutil.copyfileobj(res.raw, f)
+    else:
+       print('Image Couldn\'t be retrieved')
+
+def check_category(categories: list):
+    for category in categories:
+        if not Category.objects.filter(name=category['name']).exists():
+            new_category = Category(name=category['name'])
+            new_category.save()
+
+
+class AddMangaTitle(LoginRequiredMixin, FormView):
+    model = MangaTitle
+    form_class = AddMangaTitleForm
+    template_name = 'AddManga.html'
+    fields = [
+        'title_name',
+        'URL',
+        'last_read',
+        'image_link',
+    ]
+
+    def post(self, request, *args, **kwargs):
+        MangaTitle(title_name=request.POST['title_name'],
+                   URL=request.POST['URL'],
+                   last_read=request.POST['last_read'],
+                   image_link=request.POST['image_link'],
+                   ).save()
+
+        return redirect('/')
+
+    # def get(self, request):
+    #     if not request.user.is_staff:
+    #         return HttpResponse("Here's the text of the web page.")
+    #     return HttpResponse("Here's the text of the web page.")
+
+
+class AddMangaChapter(LoginRequiredMixin, FormView):
+    model = MangaChapter
+    form_class = AddMangaChapterForm
+    template_name = 'AddManga.html'
+    fields = [
+        'chapter_number',
+        'URL',
+    ]
+
+    def post(self, request, *args, **kwargs):
+        MangaChapter(manga=MangaTitle.objects.get(id=kwargs['pk']),
+                     chapter_number=request.POST['chapter_number'],
+                     URL=request.POST['URL'],
+                     ).save()
+        # manga = MangaTitle.objects.get(id=1)
+        # new_chapter = MangaChapter(manga=manga,
+        #            URL=request.POST['URL'],
+        #            last_read=request.POST['chapter_number'],
+        #            ).save()
+
+        return redirect('/')

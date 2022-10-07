@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      {% load static %}
+      <link rel="stylesheet" href="{% static '/css/style.css' %}">
+      <link rel="stylesheet" href="{% static '/css/' %}{{user_settings.mode}}.css">
+      <meta charset="UTF-8">
+      <title>Title</title>
+  </head>
+  <body>
+    <div class="globalDiv">
+      <div class="menu-cards-grid">
+          {% if user.is_staff %}<form action="add/title"><button class="btn first">Добавить тайтл</button></form> {% endif %}  
+          {% if user.is_staff %}<form action="update"><button class="btn first">Update</button></form> {% endif %}
+
+      </div>
+      <div class="media-grid-wrap">
+          <div class="media-cards-grid">
+              {% for title_item in page_obj %}
+              <div id="titleBlock" class="media-card-wrap">
+                {% if title_item.mode == 'o'%}
+                  <a class="media-card" href="title/{{title_item.slug}}" style="background-image: url({{title_item.image_url}})">
+                      <div class="media-card__caption">
+                          <h5 class="media-card__subtitle">   </h5>
+                          <h3 class="media-card__title line-clamp">   </h3>
+                      </div>
+                  </a>
+                {% endif %}
+                {% if title_item.mode == 'd'%}
+                <a class="media-card" href="title/{{title_item.slug}}" style="background-image: url({{title_item.image}})">
+                    <div class="media-card__caption">
+                        <h5 class="media-card__subtitle">   </h5>
+                        <h3 class="media-card__title line-clamp">   </h3>
+                    </div>
+                </a>
+              {% endif %}
+              </div>
+              {% endfor %}
+          </div>
+      </div>
+      <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a class="btn first" href="?page=1">&laquo; first</a>
+                <a class="btn first" href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+                <a class="btn first" href="?page={{ page_obj.next_page_number }}">next</a>
+                <a class="btn first" href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+      </div>
+    </div>
+    
+  </body>
+  <style>
+
+      #titleBlock {
+        justify-content: flex-start;
+        margin: 10px;
+        background: #f00;
+        width: 150px;
+        height: 208px;
+      }
+      
+      #titleImg {
+        width: 20%;
+        height: 20%;
+      }
+      
+      #globalDiv{
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+      }
+
+      #content {
+        margin-left: 15%;
+        margin-right: 15%;
+        border: medium dashed green;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        width: 70%;
+        text-overflow: ellipsis;
+        object-fit: cover;
+      }
+
+      .media-grid-wrap {
+        position: fixed;
+        top: 10%;
+        align-items: center;
+        align-content: center;
+        overflow-y: scroll;
+        max-height: 100%;
+        height: 80%;
+        width: 100%;
+      }
+      
+      .media-cards-grid {
+          display: -webkit-box;
+          display: -ms-flexbox;
+          display: flex;
+          -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+          padding: 4px 5px;
+          align-items: center;
+          align-content: center;
+      }
+
+      .menu-cards-grid {
+          display: -webkit-box;
+          display: -ms-flexbox;
+          display: flex;
+          -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+          padding: 4px 5px;
+          position: fixed;
+          top: 0%;
+          align-items: center;
+          width: 100%;
+      }
+
+      .pagination {
+          display: -webkit-box;
+          display: -ms-flexbox;
+          display: flex;
+          -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+          padding: 4px 5px;
+          position: fixed;
+          top: 82%;
+          align-items: center;
+          width: 100%;
+      }
+      
+      .media-card {
+        position: relative;
+        display: block;
+        padding-top: 140%;
+        border-radius: 4px;
+        background-color: hsla(240,5%,48%,.05);
+        background-color: var(--foreground-darken);
+        background-size: cover;
+        background-position: 50%;
+        cursor: pointer;
+      }
+
+      .media-cards-grid .media-card-wrap {
+          width: 20%;
+      }
+        .media-card-wrap {
+          padding: 8px;
+        }
+
+      .globalDiv{
+        height: 100%;
+        width: 100%;
+      }
+
+      input[type=text] {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 1px solid #555;
+      outline: none;
+      }
+
+    input[type=text]:focus {
+        background-color: lightblue;
+    
+  </style>
+</html>

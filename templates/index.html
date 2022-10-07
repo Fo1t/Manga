@@ -1,0 +1,21 @@
+{% extend "main.html" %}
+{% clock index %}
+<div class="main MuiGrid-container">
+    { % if title_list % }
+        { % for title_item in title_list % }
+            <a href="..."><div class="images MuiGrid-item">
+            <img src="">
+        </div></a>
+        { % endfor % }
+    { % endif % }
+    <a href="..."><div class="images MuiGrid-item">
+        <img src="https://api.remanga.org/media/titles/martial_peak/56169d91c6668d8ab647b3c781e453fc.jpg">
+    </div></a>
+    <a href="..."><div class="images MuiGrid-item">
+        <img src="https://api.remanga.org/media/titles/martial_peak/56169d91c6668d8ab647b3c781e453fc.jpg">
+    </div></a>
+    <a href="..."><div class="images MuiGrid-item">
+        <img src="https://api.remanga.org/media/titles/martial_peak/56169d91c6668d8ab647b3c781e453fc.jpg">
+    </div></a>
+</div>
+{% endblock %}

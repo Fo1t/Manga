@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <link rel="stylesheet" href="{% static '/css/detail.css' %}">
+    <link rel="stylesheet" href="{% static '/css/style.css' %}">
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div class="topDiv">
+        <h3>Глава {{chapter.chapter_name}}</h3>
+    </div>
+    <div mode="{{mode}}" class="imgDiv">
+        {% for img in images %}
+            {% if mode == 'o'%} <img src="{{img.image_url}}"> {% endif %}
+            {% if mode == 'd'%} <img src="{{img.image}}"> {% endif %}
+        {% endfor %}
+    </div>
+</body>
+<style>
+    .topDiv{
+        position: fixed;
+        top:0%
+    }
+
+    .imgDiv{
+        position: fixed;
+        top:5%;
+        overflow-y: scroll;
+        max-height: 100%;
+        height: 90%;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    img{
+        margin-left: 25%;
+        width:50%;
+        height: auto;
+
+    }
+
+</style>
+</html>

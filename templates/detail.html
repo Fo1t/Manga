@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <link rel="stylesheet" href="{% static '/css/detail.css' %}">
+    <link rel="stylesheet" href="{% static '/css/style.css' %}">
+    <link rel="stylesheet" href="{% static '/css/' %}{{user_settings.mode}}.css">
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div class="leftSide">
+        <div class="top">
+            <form action="../../"><button class="detailBtn btn first">На главную</button></form> 
+            {% if user.is_staff %}<form action="update/"><button class="detailBtn btn first">Обновить</button></form> {% endif %}
+        </div>
+        <div class="end">
+            <div class="titleInfo">
+                {% if title.mode == 'o'%} <img src="{{title.image_url}}" alt="lorem1"> {% endif %}
+                {% if title.mode == 'd'%} <img src="{{title.image}}" alt="lorem2"> {% endif %}
+            </div>
+            <div class="chapterInfo">
+                <select class="chapters">
+                    {% for chapter in chapters %}
+                    <option class="chapter" value="{{chapter.id}}">Глава: {{chapter.chapter_name}}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="OpenBtn detailBtn btn first">открыть</button>
+            </div>
+        </div>
+    </div>
+    <div class="rightSide">
+        <iframe src="../frame/{{def_chapter}}">
+            Ваш браузер не поддерживает плавающие фреймы!
+         </iframe>
+    </div>
+
+</body>
+<script>
+    var select = document.querySelector("select");
+    var iframe = document.querySelector("iframe")
+
+    select.addEventListener('change', function (e) {
+        iframe.src="../frame/" + e.target.value
+        console.log("Changed to1: " + e.target.value)
+    })
+</script>
+<style>
+
+    .leftSide{
+        position: fixed;
+        left: 0%;
+        top: 0%;
+        width: 22.5%;
+    }
+
+    .rightSide{
+        position: fixed;
+        left: 23%;
+        top: 0%;
+        width: 77%;
+        height: 100%;
+    }
+
+    iframe{
+        width: 100%;
+        height: 100%;
+    }
+
+    .detailBtn {
+        margin: 0;
+    }
+
+    select  {
+        width: 100%;
+    }
+</style>
+</html>
